@@ -1,0 +1,33 @@
+library(caret)
+library(ggplot2)
+
+directory <- "c://Users//Kelvin Wong//Desktop//Coursera" 
+setwd(directory)
+training <- read.csv("pml-training.csv",header=TRUE,row.names=1)
+testing <- read.csv("pml-testing.csv",header=TRUE,row.names=1)
+
+# remove NA features from training data
+training_removeNA <- training[, colSums(is.na(training)) < 100]
+# remove the same features from the testing data
+testing_removeNA <- testing[, colSums(is.na(training)) < 100]
+
+# remove the near zero covariates
+nsv <- nearZeroVar(training_removeNA, saveMetrics=TRUE)
+training <- training_removeNA[,nsv$nzv == FALSE]
+# remove the same features from the testing data
+testing <- testing_removeNA[nsv$nzv == FALSE]
+rm(training_removeNA, testing_removeNA)
+
+# K-fold Cross Validation 
+
+train_control <- trainControl(method="cv",number=10,repeats=2)
+
+modFit <- train(classe~., data=training, trControl=train_control,method="rpart")
+
+
+library(rattle)
+fancyRpartPlot(modFit$finalModel)
+
+prediction<-predict(modFit,newdata=training)
+
+confusionMatrix(prediction, training$classe)
